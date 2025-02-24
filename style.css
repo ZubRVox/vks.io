@@ -21,6 +21,7 @@ body {
     border-radius: 8px;
     font-size: 16px;
     text-align: center;
+    cursor: pointer;
 }
 
 #scheduleTitle {
@@ -48,9 +49,11 @@ body {
 .time-slot.selected {
     background: #e3f2fd;
     border-color: #4a76a8;
+    transform: scale(1.02);
 }
 
 .user-name {
     color: #4a76a8;
     font-weight: 500;
+    margin-left: 15px;
 }
