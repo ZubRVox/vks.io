@@ -1,8 +1,12 @@
 // Инициализация приложения ВК
-vkBridge.send('VKWebAppInit');
+if (typeof vkBridge !== 'undefined') {
+  vkBridge.send('VKWebAppInit');
+} else {
+  console.log("Режим тестирования вне VK");
+}
 
 // Пример данных (временные слоты)
-let timeSlots = ['15:00', '15:30', '16:00', '16:30'];
+let timeSlots = ['15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00', '19:30'];
 
 // Функция для отображения слотов
 function renderTimeSlots() {
