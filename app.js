@@ -34,7 +34,13 @@ function saveData(time, userName) {
 async function selectTime(selectedTime) {
     try {
         if (!currentUser) {
-            currentUser = await vkBridge.send('VKWebAppGetUserInfo');
+  if (typeof vkBridge !== 'undefined') {
+    currentUser = await vkBridge.send('VKWebAppGetUserInfo');
+  } else {
+    // Режим тестирования вне VK
+    currentUser = { first_name: 'Test', last_name: 'User' };
+  }
+}
         }
         
         const userName = `${currentUser.first_name} ${currentUser.last_name}`;
