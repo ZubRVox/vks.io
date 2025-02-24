@@ -75,7 +75,7 @@ async function handleTimeSelection(time) {
 
         const userName = await getUsername();
         const dateKey = date.toISOString().split('T')[0];
-        const data = JSON.parse(localStorage.getItem(dateKey) || {};
+        const data = JSON.parse(localStorage.getItem(dateKey)) || {};
 
         // Отмена выбора
         if (data[time] === userName) {
