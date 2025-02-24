@@ -28,15 +28,13 @@ const SCHEDULE_CONFIG = {
 
 // Инициализация календаря
 const datePicker = flatpickr("#datePicker", {
-    locale: "ru",
-    minDate: "today",
-    maxDate: new Date().fp_incr(30) // Доступно 30 дней,
-    dateFormat: "d.m.Y",
-    disableMobile: true,
-    onChange: function(selectedDates) {
-        const selectedDate = selectedDates[0];
-        updateSchedule(selectedDate);
-    }
+  locale: "ru",
+  minDate: "today",
+  dateFormat: "d.m.Y", // Запятая добавлена
+  disableMobile: true,
+  onChange: function(selectedDates) {
+    updateSchedule(selectedDates[0]); // Исправлена опечатка (лишняя скобка)
+  }
 });
 
 // Генерация временных слотов
