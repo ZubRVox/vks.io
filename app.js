@@ -30,6 +30,7 @@ const SCHEDULE_CONFIG = {
 const datePicker = flatpickr("#datePicker", {
     locale: "ru",
     minDate: "today",
+    maxDate: new Date().fp_incr(30) // Доступно 30 дней,
     dateFormat: "d.m.Y",
     disableMobile: true,
     onChange: function(selectedDates) {
