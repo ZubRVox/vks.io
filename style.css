@@ -13,16 +13,13 @@ body {
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
-.time-slot {
-    padding: 10px;
-    margin: 5px 0;
-    border: 1px solid #e1e3e6;
-    cursor: pointer;
-    border-radius: 5px;
+.time-slot.selected {
+  background: #e3f2fd;
+  border-color: #4a76a8;
 }
 
-.time-slot:hover {
-    background: #f0f2f5;
+.time-slot.selected:hover {
+  background: #bbdefb;
 }
 
 .user-name {
