@@ -40,3 +40,8 @@ body {
     margin-left: 10px;
     font-weight: bold;
 }
+#classDate {
+  color: #2a5885;
+  margin-bottom: 20px;
+  font-size: 1.2em;
+}
