@@ -12,29 +12,21 @@ const isTestMode = typeof vkBridge === 'undefined';
 
 // Конфигурация расписания
 const SCHEDULE_CONFIG = {
-    2: { // Вторник
-        start: 11,
-        end: 15
-    },
-    4: { // Четверг
-        start: 15,
-        end: 20
-    },
-    6: { // Суббота
-        start: 15,
-        end: 20
-    }
+    1: { start: 11, end: 15 }, // Понедельник → Вторник
+    3: { start: 15, end: 20 }, // Среда → Четверг
+    5: { start: 15, end: 20 }  // Пятница → Суббота
 };
 
 // Инициализация календаря
 const datePicker = flatpickr("#datePicker", {
-  locale: "ru",
-  minDate: "today",
-  dateFormat: "d.m.Y", // Запятая добавлена
-  disableMobile: true,
-  onChange: function(selectedDates) {
-    updateSchedule(selectedDates[0]); // Исправлена опечатка (лишняя скобка)
-  }
+    locale: "ru",
+    minDate: "today",
+    dateFormat: "d.m.Y",
+    disableMobile: true,
+    maxDate: new Date().fp_incr(365), // На год вперед
+    onChange: function(selectedDates) {
+        updateSchedule(selectedDates[0]);
+    }
 });
 
 // Генерация временных слотов
@@ -60,15 +52,14 @@ function updateSchedule(date) {
     
     // Форматирование даты
     const options = { weekday: 'long', day: 'numeric', month: 'long' };
-    const formattedDate = date.toLocaleDateString('ru-RU', options);
-    titleElement.textContent = `Расписание на ${formattedDate}`;
+    titleElement.textContent = `Расписание на ${date.toLocaleDateString('ru-RU', options)}`;
     
     // Генерация слотов
     const timeSlots = generateTimeSlots(date);
     slotsElement.innerHTML = timeSlots.map(time => `
-        <div class="time-slot" onclick="selectTime('${time}', '${date.toISOString()}')">
+        <div class="time-slot" data-time="${time}" onclick="handleTimeSelection('${time}')">
             <span>${time}</span>
-            <span class="user-name" id="user-${date.toISOString()}-${time}"></span>
+            <span class="user-name" id="user-${time}"></span>
         </div>
     `).join('');
 
@@ -76,90 +67,42 @@ function updateSchedule(date) {
     loadSavedData(date);
 }
 
-// Сохранение данных
-function saveData(date, time, userName) {
-    const dateKey = date.toISOString().split('T')[0];
-    const data = JSON.parse(localStorage.getItem(dateKey) || '{}');
-    
-    // Удаляем предыдущий выбор
-    Object.keys(data).forEach(t => {
-        if (data[t] === userName) delete data[t];
-    });
-    
-    // Добавляем новый выбор
-    if (time) data[time] = userName;
-    
-    localStorage.setItem(dateKey, JSON.stringify(data));
-}
-
-// Загрузка данных
-function loadSavedData(date) {
-    const dateKey = date.toISOString().split('T')[0];
-    const data = JSON.parse(localStorage.getItem(dateKey) || '{}');
-    
-    Object.entries(data).forEach(([time, name]) => {
-        const element = document.getElementById(`user-${date.toISOString()}-${time}`);
-        if (element) {
-            element.textContent = name;
-            element.parentElement.classList.add('selected');
-        }
-    });
-}
-
 // Обработка выбора времени
-async function selectTime(time, dateString) {
+async function handleTimeSelection(time) {
     try {
-        const date = new Date(dateString);
+        const date = datePicker.selectedDates[0];
+        if (!date) return;
+
+        const userName = await getUsername();
         const dateKey = date.toISOString().split('T')[0];
-        
-        // Получаем данные пользователя
-        if (!currentUser) {
-            currentUser = isTestMode 
-                ? { first_name: 'Test', last_name: 'User' } 
-                : await vkBridge.send('VKWebAppGetUserInfo');
-        }
-        const userName = `${currentUser.first_name} ${currentUser.last_name}`;
+        const data = JSON.parse(localStorage.getItem(dateKey) || {};
 
-        // Загружаем текущие данные
-        const data = JSON.parse(localStorage.getItem(dateKey) || {});
-        const currentSelection = Object.keys(data).find(t => data[t] === userName);
-
-        // Если кликнули на уже выбранное время - отмена
-        if (currentSelection === time) {
+        // Отмена выбора
+        if (data[time] === userName) {
             delete data[time];
-            localStorage.setItem(dateKey, JSON.stringify(data));
+            document.getElementById(`user-${time}`).textContent = '';
+            document.querySelector(`[data-time="${time}"]`).classList.remove('selected');
+        } 
+        // Новый выбор
+        else {
+            // Удаление предыдущего выбора
+            Object.keys(data).forEach(t => {
+                if (data[t] === userName) {
+                    delete data[t];
+                    const oldElement = document.querySelector(`[data-time="${t}"]`);
+                    if (oldElement) {
+                        oldElement.classList.remove('selected');
+                        document.getElementById(`user-${t}`).textContent = '';
+                    }
+                }
+            });
             
-            // Обновляем интерфейс
-            const selectedSlot = document.getElementById(`user-${dateString}-${time}`);
-            if (selectedSlot) {
-                selectedSlot.textContent = '';
-                selectedSlot.parentElement.classList.remove('selected');
-            }
-            return;
+            data[time] = userName;
+            document.getElementById(`user-${time}`).textContent = userName;
+            document.querySelector(`[data-time="${time}"]`).classList.add('selected');
         }
 
-        // Удаляем предыдущий выбор
-        if (currentSelection) {
-            delete data[currentSelection];
-            
-            // Обновляем старый слот
-            const oldSlot = document.getElementById(`user-${dateString}-${currentSelection}`);
-            if (oldSlot) {
-                oldSlot.textContent = '';
-                oldSlot.parentElement.classList.remove('selected');
-            }
-        }
-
-        // Добавляем новый выбор
-        data[time] = userName;
         localStorage.setItem(dateKey, JSON.stringify(data));
-
-        // Обновляем новый слот
-        const newSlot = document.getElementById(`user-${dateString}-${time}`);
-        if (newSlot) {
-            newSlot.textContent = userName;
-            newSlot.parentElement.classList.add('selected');
-        }
 
     } catch (error) {
         console.error('Ошибка:', error);
@@ -167,13 +110,38 @@ async function selectTime(time, dateString) {
     }
 }
 
-// Инициализация пользователя
-window.onload = async () => {
-    if (!isTestMode) {
-        try {
+// Получение имени пользователя
+async function getUsername() {
+    if (!currentUser) {
+        if (isTestMode) {
+            currentUser = { first_name: 'Тест', last_name: 'Пользователь' };
+        } else {
             currentUser = await vkBridge.send('VKWebAppGetUserInfo');
-        } catch (error) {
-            console.error('Ошибка получения пользователя:', error);
         }
+    }
+    return `${currentUser.first_name} ${currentUser.last_name}`;
+}
+
+// Загрузка сохраненных данных
+function loadSavedData(date) {
+    const dateKey = date.toISOString().split('T')[0];
+    const data = JSON.parse(localStorage.getItem(dateKey) || {});
+    
+    Object.entries(data).forEach(([time, name]) => {
+        const element = document.getElementById(`user-${time}`);
+        if (element) {
+            element.textContent = name;
+            document.querySelector(`[data-time="${time}"]`).classList.add('selected');
+        }
+    });
+}
+
+// Инициализация при загрузке
+window.onload = () => {
+    datePicker.setDate(new Date());
+    if (!isTestMode) {
+        vkBridge.send('VKWebAppGetUserInfo')
+            .then(user => currentUser = user)
+            .catch(console.error);
     }
 };
