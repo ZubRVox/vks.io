@@ -3,15 +3,22 @@
 <head>
     <meta charset="utf-8">
     <title>Расписание занятий</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link rel="stylesheet" href="style.css">
     <meta http-equiv="Content-Security-Policy" content="default-src * 'self' 'unsafe-inline' 'unsafe-eval' data:;">
 </head>
 <body>
     <div class="container">
-      <h2 id="classDate"></h2>
-      <div id="timeSlots"></div>
+        <div id="calendarContainer">
+            <input type="text" id="datePicker" placeholder="Выберите дату">
+        </div>
+        <h2 id="scheduleTitle"></h2>
+        <div id="timeSlots"></div>
     </div>
+    
     <script src="https://unpkg.com/@vkontakte/vk-bridge/dist/browser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ru.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
