@@ -33,37 +33,42 @@ const datePicker = flatpickr("#datePicker", {
     }
 });
 
-// Генерация временных слотов (добавлена проверка даты)
+// Генерация временных слотов
 function generateTimeSlots(date) {
-    if (!(date instanceof Date)) return [];
-    
-    const dayOfWeek = date.getDay();
-    const config = SCHEDULE_CONFIG[dayOfWeek];
-    if (!config) return [];
-    
-    const slots = [];
-    for (let hour = config.start; hour < config.end; hour++) {
-        slots.push(
-            `${hour.toString().padStart(2, '0')}:00`,
-            `${hour.toString().padStart(2, '0')}:30`
-        );
+    try {
+        if (!(date instanceof Date)) return [];
+        
+        const dayOfWeek = date.getDay();
+        const config = SCHEDULE_CONFIG[dayOfWeek];
+        if (!config) return [];
+        
+        const slots = [];
+        for (let hour = config.start; hour < config.end; hour++) {
+            slots.push(
+                `${hour.toString().padStart(2, '0')}:00`,
+                `${hour.toString().padStart(2, '0')}:30`
+            );
+        }
+        return slots;
+    } catch (error) {
+        console.error('Ошибка генерации слотов:', error);
+        return [];
     }
-    return slots;
 }
 
-// Обновление интерфейса (добавлены проверки)
+// Обновление интерфейса
 function updateSchedule(date) {
-    if (!date) return;
-
-    const titleElement = document.getElementById('scheduleTitle');
-    const slotsElement = document.getElementById('timeSlots');
-    
-    if (!titleElement || !slotsElement) {
-        console.error('Элементы интерфейса не найдены');
-        return;
-    }
-
     try {
+        if (!(date instanceof Date)) {
+            console.error('Некорректная дата');
+            return;
+        }
+
+        const titleElement = document.getElementById('scheduleTitle');
+        const slotsElement = document.getElementById('timeSlots');
+        
+        if (!titleElement || !slotsElement) return;
+
         titleElement.textContent = `Расписание на ${date.toLocaleDateString('ru-RU', {
             weekday: 'long',
             day: 'numeric',
@@ -80,11 +85,11 @@ function updateSchedule(date) {
 
         loadSavedData(date);
     } catch (error) {
-        console.error('Ошибка обновления расписания:', error);
+        console.error('Ошибка обновления интерфейса:', error);
     }
 }
 
-// Обработка выбора времени (оптимизировано)
+// Обработка выбора времени
 async function handleTimeSelection(time) {
     try {
         const date = datePicker.selectedDates[0];
@@ -92,9 +97,9 @@ async function handleTimeSelection(time) {
 
         const userName = await getUsername();
         const dateKey = date.toISOString().split('T')[0];
-        const data = JSON.parse(localStorage.getItem(dateKey) || '{}');
+        const storedData = localStorage.getItem(dateKey) || '{}';
+        const data = JSON.parse(storedData);
 
-        // Получаем элементы интерфейса
         const userElement = document.getElementById(`user-${time}`);
         const slotElement = document.querySelector(`[data-time="${time}"]`);
 
@@ -108,6 +113,7 @@ async function handleTimeSelection(time) {
             userElement.textContent = '';
             slotElement.classList.remove('selected');
         } else {
+            // Удаляем предыдущий выбор
             Object.keys(data).forEach(t => {
                 if (data[t] === userName) {
                     delete data[t];
@@ -127,33 +133,37 @@ async function handleTimeSelection(time) {
         localStorage.setItem(dateKey, JSON.stringify(data));
 
     } catch (error) {
-        console.error('Ошибка:', error);
+        console.error('Ошибка выбора времени:', error);
         alert(`Ошибка: ${error.message}`);
     }
 }
 
-// Получение имени пользователя (кеширование)
+// Получение имени пользователя
 async function getUsername() {
-    if (!currentUser) {
-        if (isTestMode) {
-            currentUser = { first_name: 'Тест', last_name: 'Пользователь' };
-        } else {
-            try {
+    try {
+        if (!currentUser) {
+            if (isTestMode) {
+                currentUser = { 
+                    first_name: 'Тест', 
+                    last_name: 'Пользователь' 
+                };
+            } else {
                 currentUser = await vkBridge.send('VKWebAppGetUserInfo');
-            } catch (error) {
-                console.error('Ошибка получения пользователя:', error);
-                currentUser = { first_name: 'Неизвестный', last_name: 'Пользователь' };
             }
         }
+        return `${currentUser.first_name} ${currentUser.last_name}`;
+    } catch (error) {
+        console.error('Ошибка получения пользователя:', error);
+        return 'Неизвестный Пользователь';
     }
-    return `${currentUser.first_name} ${currentUser.last_name}`;
 }
 
-// Загрузка сохраненных данных (добавлена обработка ошибок)
+// Загрузка сохраненных данных
 function loadSavedData(date) {
     try {
         const dateKey = date.toISOString().split('T')[0];
-        const data = JSON.parse(localStorage.getItem(dateKey) || {};
+        const storedData = localStorage.getItem(dateKey) || '{}';
+        const data = JSON.parse(storedData);
         
         Object.entries(data).forEach(([time, name]) => {
             const element = document.getElementById(`user-${time}`);
@@ -169,7 +179,7 @@ function loadSavedData(date) {
     }
 }
 
-// Инициализация при загрузке (добавлен обработчик ошибок)
+// Инициализация при загрузке
 window.onload = () => {
     try {
         datePicker.setDate(new Date());
@@ -179,11 +189,9 @@ window.onload = () => {
                     currentUser = user;
                     updateSchedule(datePicker.selectedDates[0]);
                 })
-                .catch(error => {
-                    console.error('Ошибка инициализации:', error);
-                });
+                .catch(console.error);
         }
     } catch (error) {
-        console.error('Критическая ошибка инициализации:', error);
+        console.error('Ошибка инициализации:', error);
     }
 };
