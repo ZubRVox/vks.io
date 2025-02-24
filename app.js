@@ -122,7 +122,7 @@ async function selectTime(time, dateString) {
         const userName = `${currentUser.first_name} ${currentUser.last_name}`;
 
         // Загружаем текущие данные
-        const data = JSON.parse(localStorage.getItem(dateKey) || {};
+        const data = JSON.parse(localStorage.getItem(dateKey) || {});
         const currentSelection = Object.keys(data).find(t => data[t] === userName);
 
         // Если кликнули на уже выбранное время - отмена
