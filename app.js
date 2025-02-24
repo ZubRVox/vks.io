@@ -111,25 +111,57 @@ function loadSavedData(date) {
 async function selectTime(time, dateString) {
     try {
         const date = new Date(dateString);
+        const dateKey = date.toISOString().split('T')[0];
         
+        // Получаем данные пользователя
         if (!currentUser) {
             currentUser = isTestMode 
                 ? { first_name: 'Test', last_name: 'User' } 
                 : await vkBridge.send('VKWebAppGetUserInfo');
         }
-        
         const userName = `${currentUser.first_name} ${currentUser.last_name}`;
-        saveData(date, time, userName);
-        
-        // Обновление интерфейса
-        const allSlots = document.querySelectorAll('.time-slot');
-        allSlots.forEach(slot => slot.classList.remove('selected'));
-        
-        const selectedSlot = document.getElementById(`user-${dateString}-${time}`);
-        if (selectedSlot) {
-            selectedSlot.textContent = userName;
-            selectedSlot.parentElement.classList.add('selected');
+
+        // Загружаем текущие данные
+        const data = JSON.parse(localStorage.getItem(dateKey) || {};
+        const currentSelection = Object.keys(data).find(t => data[t] === userName);
+
+        // Если кликнули на уже выбранное время - отмена
+        if (currentSelection === time) {
+            delete data[time];
+            localStorage.setItem(dateKey, JSON.stringify(data));
+            
+            // Обновляем интерфейс
+            const selectedSlot = document.getElementById(`user-${dateString}-${time}`);
+            if (selectedSlot) {
+                selectedSlot.textContent = '';
+                selectedSlot.parentElement.classList.remove('selected');
+            }
+            return;
         }
+
+        // Удаляем предыдущий выбор
+        if (currentSelection) {
+            delete data[currentSelection];
+            
+            // Обновляем старый слот
+            const oldSlot = document.getElementById(`user-${dateString}-${currentSelection}`);
+            if (oldSlot) {
+                oldSlot.textContent = '';
+                oldSlot.parentElement.classList.remove('selected');
+            }
+        }
+
+        // Добавляем новый выбор
+        data[time] = userName;
+        localStorage.setItem(dateKey, JSON.stringify(data));
+
+        // Обновляем новый слот
+        const newSlot = document.getElementById(`user-${dateString}-${time}`);
+        if (newSlot) {
+            newSlot.textContent = userName;
+            newSlot.parentElement.classList.add('selected');
+        }
+
     } catch (error) {
         console.error('Ошибка:', error);
         alert('Не удалось сохранить выбор');
